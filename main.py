@@ -15,10 +15,57 @@ class FirstScr(Screen):
         self.manager.transition.direction = 'left' 
         self.manager.current = 'game'
 
+class FinalScr(Screen):
+    def __init__(self, name='final'):
+        super().__init__(name=name) 
+        self.win_label = Label(text="")
+        btn = Button(text="перезапустить")
+        btn.on_press = self.next
+
+        vertical_layout = BoxLayout(orientation="vertical")
+        vertical_layout.add_widget(self.win_label)
+        vertical_layout.add_widget(btn)
+        self.add_widget(vertical_layout) 
+
+    def next(self):
+        self.manager.transition.direction = 'right' 
+        #очистить игровой экран
+        self.manager.current = 'game'
+
 class Square:
-    def __init__(self):
+    def __init__(self,*lines):
         self.value = None
         self.button = Button() #потом попробуем покрасить
+        self.button.on_press = self.click
+
+        self.lines = lines
+        for line in lines:
+            line.append(self)
+    
+    def click(self):
+        global player
+
+        if self.value is None: #проставить значение если пустая клетка
+            self.value = player
+            self.button.text = player
+            self.win_check()
+
+            if player == "X":
+                player = "O"
+            else: 
+                player = "X"
+      
+    def win_check(self):
+        for line in self.lines:
+            n = 0
+            for square in line:
+                if square.value == player:
+                    n += 1
+
+            if n == 3:
+                global sm, final_scr
+                final_scr.win_label.text = "победил " + player
+                sm.current = "final" #перекидываем на экран финиша (его пока нет)
 
 class GameScr(Screen):
     def __init__(self, name='game'):
@@ -37,49 +84,20 @@ class GameScr(Screen):
         diagonal1 = []
         diagonal2 = []
         
-        f = Square()
-        up.append(f)
-        left.append(f)
-        diagonal1.append(f)
-            
-        f = Square()
-        up.append(f)
-        vertical_mid.append(f)
+        #верхняя
+        Square(up,left,diagonal1)
+        Square(up,vertical_mid)
+        Square(up,right,diagonal2)
 
-        f = Square()
-        up.append(f)
-        right.append(f)
-        diagonal2.append(f)
-        #верхнюю закончили
+        #средний
+        Square(mid,left)
+        Square(mid,vertical_mid,diagonal1,diagonal2)
+        Square(mid,right)
 
-        f = Square()
-        down.append(f)
-        left.append(f)
-        diagonal2.append(f)
-            
-        f = Square()
-        down.append(f)
-        vertical_mid.append(f)
-
-        f = Square()
-        down.append(f)
-        right.append(f)
-        diagonal1.append(f)
-        #нижний готово
-
-        f = Square()
-        mid.append(f)
-        left.append(f)
-            
-        f = Square()
-        mid.append(f)
-        vertical_mid.append(f)
-        diagonal1.append(f)
-        diagonal2.append(f)
-
-        f = Square()
-        mid.append(f)
-        right.append(f)
+        #нижний
+        Square(down,left,diagonal2)
+        Square(down,vertical_mid)
+        Square(down,right,diagonal1)
 
         for square in up:
             up_layout.add_widget(square.button)
@@ -96,10 +114,15 @@ class GameScr(Screen):
 
 class MyApp(App):
     def build(self):
+        global sm, final_scr
+
         sm = ScreenManager()
         sm.add_widget(FirstScr())
         sm.add_widget(GameScr())
+        final_scr = FinalScr()
+        sm.add_widget(final_scr)
         return sm
 
+player = "X"
 app = MyApp()
 app.run()
